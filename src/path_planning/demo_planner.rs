@@ -1,4 +1,4 @@
-// TODO: Path planning 알고리즘 구현 예정
+// TODO: Implement path planning algorithm
 
 pub struct Planner {
     pub start: (f64, f64),
@@ -12,6 +12,6 @@ impl Planner {
 
     pub fn plan(&self) {
         println!("Planning from {:?} to {:?}", self.start, self.goal);
-        println!("TODO: 구현 예정");
+        println!("TODO: Not implemented yet");
     }
 }

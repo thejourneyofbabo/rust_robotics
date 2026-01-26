@@ -1,4 +1,4 @@
-/// 두 숫자의 합을 반환
+/// Returns the sum of two numbers
 pub fn sum(a: i32, b: i32) -> i32 {
     a + b
 }
