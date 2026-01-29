@@ -4,4 +4,5 @@ fn main() {
     println!("Breadth First Search Example");
     let k = breadth_first_search::use_math();
     println!("{}", k);
+    breadth_first_search::main();
 }
