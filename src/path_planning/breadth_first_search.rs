@@ -13,19 +13,33 @@ struct Point {
 
 impl Point {
     fn new(x: f32, y: f32) -> Point {
-        Point{
-            x: x,
-            y: y,
-        }
+        Point{x, y}
     }
 }
 
 struct BFSPlanning {
-    start_position: Point,
-    goal_position: Point,
+    obstacle_x: Vec<f32>,
+    obstacle_y: Vec<f32>,
+    grid_size: f32,
+    robot_radius: f32,
 }
 
 impl BFSPlanning {
+    fn new(obstacle_x: Vec<f32>, obstacle_y: Vec<f32>, grid_size: f32, robot_radius: f32) -> BFSPlanning {
+        BFSPlanning {
+            obstacle_x,
+            obstacle_y,
+            grid_size,
+            robot_radius,
+        }
+    }
+
+    fn planning(start_position: Point, goal_position: Point) -> Vec<Point> {
+        let mut test_vec = Vec::new();
+        test_vec.push(start_position);
+
+        test_vec
+    }
 
 }
 
@@ -37,17 +51,11 @@ fn use_math() -> i32 {
 }
 
 pub fn main() {
-    let scenario_1 = BFSPlanning {
-        start_position: Point::new(10.0, 10.0),
-        goal_position: Point::new(50.0, 50.0),
-    };
-
-    // println!("start = {:?}", scenario_0.start_position);
-
-    let mut obstacle_x = Vec::new();    // Obstacles x position
-    let mut obstacle_y = Vec::new();    // Obstacles y position
+    // Initialization
     let grid_size = 2.0;                // [m]
     let robot_radius = 1.0;             // [m]
+    let mut obstacle_x = Vec::new();    // Obstacles x position
+    let mut obstacle_y = Vec::new();    // Obstacles y position
 
     // Locate Obstacles
     for i in -10..=60 {
@@ -75,6 +83,13 @@ pub fn main() {
         obstacle_y.push(60.0 - i as f32);
     }
 
+    let start_position = Point::new(10.0, 10.0);
+    let goal_position = Point::new(50.0, 50.0);
+    let scenario_1 = BFSPlanning::new(obstacle_x, obstacle_y, grid_size, robot_radius);
+    // println!("scenario_1: grid_size {}", scenario_1.grid_size);
+
+    let mut route_xy: Vec<Point> = Vec::new();
+    route_xy = BFSPlanning::planning(start_position, goal_position);
 
 
 
