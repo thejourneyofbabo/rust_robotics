@@ -17,6 +17,18 @@ impl Point {
     }
 }
 
+struct Node {
+    x_idx: i32,
+    y_idx: i32,
+    cost: f32,
+    parent_idx: i32,
+    parent: Option<Box<Node>>,
+}
+
+impl Node {
+
+}
+
 struct BFSPlanning {
     obstacle_x: Vec<f32>,
     obstacle_y: Vec<f32>,
@@ -25,8 +37,8 @@ struct BFSPlanning {
 }
 
 impl BFSPlanning {
-    fn new(obstacle_x: Vec<f32>, obstacle_y: Vec<f32>, grid_size: f32, robot_radius: f32) -> BFSPlanning {
-        BFSPlanning {
+    fn new(obstacle_x: Vec<f32>, obstacle_y: Vec<f32>, grid_size: f32, robot_radius: f32) -> Self {
+        Self {
             obstacle_x,
             obstacle_y,
             grid_size,
@@ -34,11 +46,21 @@ impl BFSPlanning {
         }
     }
 
-    fn planning(start_position: Point, goal_position: Point) -> Vec<Point> {
+    fn planning(&self, start_position: Point, goal_position: Point) -> Vec<Point> {
         let mut test_vec = Vec::new();
         test_vec.push(start_position);
 
         test_vec
+
+        /* Breadth First Search based Planning 
+         *
+         * input: 
+         *      start_position, goal_position
+         * output:
+         *      route_xy: Point list of final path 
+         */
+
+
     }
 
 }
@@ -88,8 +110,8 @@ pub fn main() {
     let scenario_1 = BFSPlanning::new(obstacle_x, obstacle_y, grid_size, robot_radius);
     // println!("scenario_1: grid_size {}", scenario_1.grid_size);
 
-    let mut route_xy: Vec<Point> = Vec::new();
-    route_xy = BFSPlanning::planning(start_position, goal_position);
+    // let mut route_xy: Vec<Point> = Vec::new();
+    let route_xy: Vec<Point> = scenario_1.planning(start_position, goal_position);
 
 
 
