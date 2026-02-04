@@ -1,4 +1,5 @@
 use crate::utils::math;
+use std::collections::{HashMap, VecDeque};
 
 //pub struct StartAndGoalPosition {
 //    pub start: (f32, f32),
@@ -12,8 +13,8 @@ struct Point {
 }
 
 impl Point {
-    fn new(x: f32, y: f32) -> Point {
-        Point{x, y}
+    fn new(x: f32, y: f32) -> Self {
+        Self {x, y}
     }
 }
 
@@ -21,12 +22,13 @@ struct Node {
     x_idx: i32,
     y_idx: i32,
     cost: f32,
-    parent_idx: i32,
-    parent: Option<Box<Node>>,
+    parent: Option<usize>,
 }
 
 impl Node {
-
+    fn new(x_idx: i32, y_idx: i32, cost: f32, parent: Option<usize>) -> Self {
+        Self { x_idx, y_idx, cost, parent}
+    }
 }
 
 struct BFSPlanning {
@@ -46,11 +48,11 @@ impl BFSPlanning {
         }
     }
 
+    fn calc_xyindex(){}
+
     fn planning(&self, start_position: Point, goal_position: Point) -> Vec<Point> {
         let mut test_vec = Vec::new();
         test_vec.push(start_position);
-
-        test_vec
 
         /* Breadth First Search based Planning 
          *
@@ -59,6 +61,12 @@ impl BFSPlanning {
          * output:
          *      route_xy: Point list of final path 
          */
+        
+        let mut nodes: Vec<Node> = Vec::new();
+
+
+        
+        test_vec
 
 
     }
