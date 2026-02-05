@@ -48,7 +48,11 @@ impl BFSPlanning {
         }
     }
 
-    fn calc_xyindex(){}
+    // fn calc_obstacle_map(self) -> Self {
+    //     let obs_min_x = 
+    // }
+
+    fn calc_xyindex(self, ){}
 
     fn planning(&self, start_position: Point, goal_position: Point) -> Vec<Point> {
         let mut test_vec = Vec::new();
