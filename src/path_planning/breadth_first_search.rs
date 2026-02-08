@@ -1,5 +1,4 @@
 use crate::utils::math;
-use std::collections::{HashMap, VecDeque};
 
 //pub struct StartAndGoalPosition {
 //    pub start: (f32, f32),
@@ -31,28 +30,49 @@ impl Node {
     }
 }
 
+struct ObstacleMap {
+    obs_min_x: f32,
+    obs_min_y: f32, 
+    obs_max_x: f32,
+    obs_max_y: f32,
+    x_width: i32,
+    y_width: i32,
+    obmap: Vec<Vec<bool>>,
+}
+
 struct BFSPlanning {
     obstacle_x: Vec<f32>,
     obstacle_y: Vec<f32>,
     grid_size: f32,
     robot_radius: f32,
+    obstacle_map: ObstacleMap,
 }
 
 impl BFSPlanning {
     fn new(obstacle_x: Vec<f32>, obstacle_y: Vec<f32>, grid_size: f32, robot_radius: f32) -> Self {
+        let obstacle_map = Self::calc_obstacle_map(&obstacle_x, &obstacle_y, grid_size, robot_radius);
         Self {
             obstacle_x,
             obstacle_y,
-            grid_size,
+            grid_size,  // resolution
             robot_radius,
+            obstacle_map,
         }
     }
 
-    // fn calc_obstacle_map(self) -> Self {
-    //     let obs_min_x = 
-    // }
+    fn calc_obstacle_map(ox: &[f32], oy: &[f32], grid_size: f32, robot_radius: f32) -> ObstacleMap {
+        let obs_min_x = self.obstacle_x.iter().min();
+        let obs_min_y = self.obstacle_y.iter().min();
+        let obs_max_x = self.obstacle_x.iter().max();
+        let obs_max_y = self.obstacle_y.iter().max();
 
-    fn calc_xyindex(self, ){}
+        let obs_x_width = round((obs_max_x - obs_min_x) / self.grid_size);
+        let obs_y_width = round((obs_max_y - obs_min_y) / self.grid_size);
+
+
+    }
+
+    fn calc_xyindex(self, position: Point,  ){}
 
     fn planning(&self, start_position: Point, goal_position: Point) -> Vec<Point> {
         let mut test_vec = Vec::new();
