@@ -35,8 +35,8 @@ struct ObstacleMap {
     obs_min_y: f32, 
     obs_max_x: f32,
     obs_max_y: f32,
-    x_width: i32,
-    y_width: i32,
+    obs_x_width: i32,
+    obs_y_width: i32,
     obmap: Vec<Vec<bool>>,
 }
 
@@ -60,15 +60,45 @@ impl BFSPlanning {
         }
     }
 
-    fn calc_obstacle_map(ox: &[f32], oy: &[f32], grid_size: f32, robot_radius: f32) -> ObstacleMap {
-        let obs_min_x = self.obstacle_x.iter().min();
-        let obs_min_y = self.obstacle_y.iter().min();
-        let obs_max_x = self.obstacle_x.iter().max();
-        let obs_max_y = self.obstacle_y.iter().max();
+    fn calc_grid_position(index: usize, min_val: f32, grid_size: f32) -> i32 {
+        let pos = index as f32 * grid_size + min_val;
+        pos
+    }
 
-        let obs_x_width = round((obs_max_x - obs_min_x) / self.grid_size);
-        let obs_y_width = round((obs_max_y - obs_min_y) / self.grid_size);
+    fn calc_obstacle_map(ox: &[f32], oy: &[f32], grid_size: f32, robot_radius: f32) -> ObstacleMap {  // Need to Fix
+        let obs_min_x = ox.iter().min().unwrap();
+        let obs_min_y = oy.iter().min().unwrap();
+        let obs_max_x = ox.iter().max().unwrap();
+        let obs_max_y = oy.iter().max().unwrap();
 
+        let obs_x_width = round((obs_max_x - obs_min_x) / grid_size);
+        let obs_y_width = round((obs_max_y - obs_min_y) / grid_size);
+
+        let mut obmap = vec![vec![false; obs_y_width]; obs_x_width];    // Initialize vector
+        for ix in 0..obs_x_width {
+            x = Self::calc_grid_position(ix, &obs_min_x, &grid_size);
+            for iy in 0..obs_y_width {
+                y = Self::calc_grid_position(iy, &obs_min_y, &grid_size);
+                for (&iox, &ioy) in ox.iter().zip(oy.iter()) {
+                    let d = ((iox - x).powi(2) + (ioy - y).powi(2)).sqrt();
+                    if d <= robot_radius {
+                        obmap[ix][iy] = true;
+                        break;
+                    }
+                }
+
+            }
+        }
+
+        ObstacleMap {
+            obs_min_x,
+            obs_min_y,
+            obs_max_x,
+            obs_max_y,
+            obs_x_width,
+            obs_y_width,
+            obmap,
+        }
 
     }
 
