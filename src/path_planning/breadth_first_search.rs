@@ -60,7 +60,7 @@ impl BFSPlanning {
         }
     }
 
-    fn calc_grid_position(index: usize, min_val: f32, grid_size: f32) -> i32 {
+    fn calc_grid_position(index: usize, min_val: &f32, grid_size: &f32) -> f32 {
         let pos = index as f32 * grid_size + min_val;
         pos
     }
@@ -71,14 +71,14 @@ impl BFSPlanning {
         let obs_max_x = ox.iter().max().unwrap();
         let obs_max_y = oy.iter().max().unwrap();
 
-        let obs_x_width = round((obs_max_x - obs_min_x) / grid_size);
-        let obs_y_width = round((obs_max_y - obs_min_y) / grid_size);
+        let obs_x_width = ((obs_max_x - obs_min_x) / grid_size).round();
+        let obs_y_width = ((obs_max_y - obs_min_y) / grid_size).round();
 
         let mut obmap = vec![vec![false; obs_y_width]; obs_x_width];    // Initialize vector
         for ix in 0..obs_x_width {
-            x = Self::calc_grid_position(ix, &obs_min_x, &grid_size);
+            let x = Self::calc_grid_position(ix, &obs_min_x, &grid_size);
             for iy in 0..obs_y_width {
-                y = Self::calc_grid_position(iy, &obs_min_y, &grid_size);
+                let y = Self::calc_grid_position(iy, &obs_min_y, &grid_size);
                 for (&iox, &ioy) in ox.iter().zip(oy.iter()) {
                     let d = ((iox - x).powi(2) + (ioy - y).powi(2)).sqrt();
                     if d <= robot_radius {
