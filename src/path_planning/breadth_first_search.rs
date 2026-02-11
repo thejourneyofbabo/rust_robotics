@@ -1,19 +1,7 @@
-use plotters::prelude::*;
+use crate::utils::viz::{GridViz, Point};
 use std::collections::VecDeque;
 
 // --- Types ---
-
-#[derive(Debug, Clone, Copy)]
-struct Point {
-    x: f32,
-    y: f32,
-}
-
-impl Point {
-    fn new(x: f32, y: f32) -> Self {
-        Self { x, y }
-    }
-}
 
 struct Node {
     idx_x: i32,
@@ -101,7 +89,12 @@ impl GridMap {
 
 // --- BFS Planning ---
 
-fn bfs_plan(grid: &GridMap, pt_start: Point, pt_goal: Point) -> Vec<Point> {
+fn bfs_plan(
+    grid: &GridMap,
+    pt_start: Point,
+    pt_goal: Point,
+    mut on_explore: impl FnMut(Point),
+) -> Vec<Point> {
     let idx_sx = grid.pos_to_idx(pt_start.x, grid.f_min_x);
     let idx_sy = grid.pos_to_idx(pt_start.y, grid.f_min_y);
     let idx_gx = grid.pos_to_idx(pt_goal.x, grid.f_min_x);
@@ -124,6 +117,11 @@ fn bfs_plan(grid: &GridMap, pt_start: Point, pt_goal: Point) -> Vec<Point> {
             return Vec::new();
         };
         let Node { idx_x, idx_y, f_cost, .. } = v_nodes[idx_cur];
+
+        on_explore(Point::new(
+            grid.idx_to_pos(idx_x as usize, grid.f_min_x),
+            grid.idx_to_pos(idx_y as usize, grid.f_min_y),
+        ));
 
         if idx_x == idx_gx && idx_y == idx_gy {
             break idx_cur;
@@ -170,56 +168,7 @@ fn bfs_plan(grid: &GridMap, pt_start: Point, pt_goal: Point) -> Vec<Point> {
     v_path
 }
 
-// --- Visualization ---
-
-fn visualize_path(
-    v_obs: &[Point],
-    pt_start: Point,
-    pt_goal: Point,
-    v_path: &[Point],
-    grid: &GridMap,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let root = BitMapBackend::new("bfs_path.png", (900, 900)).into_drawing_area();
-    root.fill(&WHITE)?;
-
-    let mut chart = ChartBuilder::on(&root)
-        .margin(10)
-        .caption("BFS Path", ("sans-serif", 24))
-        .x_label_area_size(40)
-        .y_label_area_size(40)
-        .build_cartesian_2d(
-            grid.f_min_x as f64..grid.f_max_x as f64,
-            grid.f_min_y as f64..grid.f_max_y as f64,
-        )?;
-
-    chart.configure_mesh().draw()?;
-
-    chart.draw_series(
-        v_obs.iter().map(|pt| Circle::new((pt.x as f64, pt.y as f64), 2, BLACK.filled())),
-    )?;
-
-    chart.draw_series(std::iter::once(Circle::new(
-        (pt_start.x as f64, pt_start.y as f64),
-        5,
-        GREEN.filled(),
-    )))?;
-
-    chart.draw_series(std::iter::once(Circle::new(
-        (pt_goal.x as f64, pt_goal.y as f64),
-        5,
-        RED.filled(),
-    )))?;
-
-    if v_path.len() > 1 {
-        chart.draw_series(LineSeries::new(
-            v_path.iter().map(|pt| (pt.x as f64, pt.y as f64)),
-            &BLUE,
-        ))?;
-    }
-
-    root.present()?;
-    Ok(())
-}
+// --- Main ---
 
 pub fn main() {
     let f_resolution = 2.0_f32;
@@ -237,11 +186,27 @@ pub fn main() {
     let pt_goal = Point::new(50.0, 50.0);
 
     let grid = GridMap::build(&v_obs, f_resolution, f_radius);
-    let v_path = bfs_plan(&grid, pt_start, pt_goal);
 
-    if let Err(err) = visualize_path(&v_obs, pt_start, pt_goal, &v_path, &grid) {
-        eprintln!("Failed to render bfs_path.png: {err}");
-    } else {
-        println!("Saved bfs_path.png");
-    }
+    let mut viz = GridViz::new(
+        "BFS Path Planning",
+        (grid.f_min_x, grid.f_max_x),
+        (grid.f_min_y, grid.f_max_y),
+    );
+
+    viz.draw(&v_obs, pt_start, pt_goal, &[], &[]);
+
+    let mut v_explored: Vec<Point> = Vec::new();
+    let mut n_count = 0u32;
+    let v_path = bfs_plan(&grid, pt_start, pt_goal, |pt| {
+        v_explored.push(pt);
+        n_count += 1;
+        if n_count % 10 == 0 {
+            viz.draw(&v_obs, pt_start, pt_goal, &v_explored, &[]);
+        }
+    });
+
+    println!("Find goal");
+
+    viz.draw(&v_obs, pt_start, pt_goal, &v_explored, &v_path);
+    viz.wait_close();
 }
