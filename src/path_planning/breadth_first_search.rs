@@ -4,86 +4,86 @@ use std::collections::VecDeque;
 // --- Types ---
 
 struct Node {
-    idx_x: i32,
-    idx_y: i32,
-    f_cost: f32,
-    idx_parent: Option<usize>,
+    x_idx: i32,
+    y_idx: i32,
+    cost: f32,
+    parent_idx: Option<usize>,
 }
 
 struct Motion {
     dx: i32,
     dy: i32,
-    f_cost: f32,
+    cost: f32,
 }
 
 const SQRT2: f32 = std::f32::consts::SQRT_2;
 
 const MOTIONS: [Motion; 8] = [
-    Motion { dx:  1, dy:  0, f_cost: 1.0 },
-    Motion { dx:  0, dy:  1, f_cost: 1.0 },
-    Motion { dx: -1, dy:  0, f_cost: 1.0 },
-    Motion { dx:  0, dy: -1, f_cost: 1.0 },
-    Motion { dx: -1, dy: -1, f_cost: SQRT2 },
-    Motion { dx: -1, dy:  1, f_cost: SQRT2 },
-    Motion { dx:  1, dy: -1, f_cost: SQRT2 },
-    Motion { dx:  1, dy:  1, f_cost: SQRT2 },
+    Motion { dx:  1, dy:  0, cost: 1.0 },
+    Motion { dx:  0, dy:  1, cost: 1.0 },
+    Motion { dx: -1, dy:  0, cost: 1.0 },
+    Motion { dx:  0, dy: -1, cost: 1.0 },
+    Motion { dx: -1, dy: -1, cost: SQRT2 },
+    Motion { dx: -1, dy:  1, cost: SQRT2 },
+    Motion { dx:  1, dy: -1, cost: SQRT2 },
+    Motion { dx:  1, dy:  1, cost: SQRT2 },
 ];
 
 // --- Grid Map ---
 
 struct GridMap {
-    f_min_x: f32,
-    f_min_y: f32,
-    f_max_x: f32,
-    f_max_y: f32,
-    f_resolution: f32,
-    n_width: usize,
-    n_height: usize,
-    vv_blocked: Vec<Vec<bool>>,
+    min_x: f32,
+    min_y: f32,
+    max_x: f32,
+    max_y: f32,
+    resolution: f32,
+    width: usize,
+    height: usize,
+    blocked: Vec<Vec<bool>>,
 }
 
 impl GridMap {
-    fn build(v_obs: &[Point], f_resolution: f32, f_radius: f32) -> Self {
-        let f_min_x = v_obs.iter().map(|pt| pt.x).reduce(f32::min).unwrap();
-        let f_min_y = v_obs.iter().map(|pt| pt.y).reduce(f32::min).unwrap();
-        let f_max_x = v_obs.iter().map(|pt| pt.x).reduce(f32::max).unwrap();
-        let f_max_y = v_obs.iter().map(|pt| pt.y).reduce(f32::max).unwrap();
+    fn build(obstacles: &[Point], resolution: f32, robot_radius: f32) -> Self {
+        let min_x = obstacles.iter().map(|pt| pt.x).reduce(f32::min).unwrap();
+        let min_y = obstacles.iter().map(|pt| pt.y).reduce(f32::min).unwrap();
+        let max_x = obstacles.iter().map(|pt| pt.x).reduce(f32::max).unwrap();
+        let max_y = obstacles.iter().map(|pt| pt.y).reduce(f32::max).unwrap();
 
-        let n_width = ((f_max_x - f_min_x) / f_resolution).round() as usize;
-        let n_height = ((f_max_y - f_min_y) / f_resolution).round() as usize;
+        let width = ((max_x - min_x) / resolution).round() as usize;
+        let height = ((max_y - min_y) / resolution).round() as usize;
 
-        let mut vv_blocked = vec![vec![false; n_height]; n_width];
-        for idx_x in 0..n_width {
-            let fx = idx_x as f32 * f_resolution + f_min_x;
-            for idx_y in 0..n_height {
-                let fy = idx_y as f32 * f_resolution + f_min_y;
-                vv_blocked[idx_x][idx_y] = v_obs
+        let mut blocked = vec![vec![false; height]; width];
+        for x_idx in 0..width {
+            let x = x_idx as f32 * resolution + min_x;
+            for y_idx in 0..height {
+                let y = y_idx as f32 * resolution + min_y;
+                blocked[x_idx][y_idx] = obstacles
                     .iter()
-                    .any(|pt| (pt.x - fx).hypot(pt.y - fy) <= f_radius);
+                    .any(|pt| (pt.x - x).hypot(pt.y - y) <= robot_radius);
             }
         }
 
-        Self { f_min_x, f_min_y, f_max_x, f_max_y, f_resolution, n_width, n_height, vv_blocked }
+        Self { min_x, min_y, max_x, max_y, resolution, width, height, blocked }
     }
 
-    fn pos_to_idx(&self, f_pos: f32, f_min: f32) -> i32 {
-        ((f_pos - f_min) / self.f_resolution).round() as i32
+    fn pos_to_idx(&self, pos: f32, min: f32) -> i32 {
+        ((pos - min) / self.resolution).round() as i32
     }
 
-    fn idx_to_pos(&self, idx: usize, f_min: f32) -> f32 {
-        idx as f32 * self.f_resolution + f_min
+    fn index_to_pos(&self, index: usize, min: f32) -> f32 {
+        index as f32 * self.resolution + min
     }
 
-    fn flat_index(&self, idx_x: i32, idx_y: i32) -> usize {
-        idx_y as usize * self.n_width + idx_x as usize
+    fn flat_index(&self, x_idx: i32, y_idx: i32) -> usize {
+        y_idx as usize * self.width + x_idx as usize
     }
 
-    fn is_walkable(&self, idx_x: i32, idx_y: i32) -> bool {
-        if idx_x < 0 || idx_y < 0 {
+    fn is_walkable(&self, x_idx: i32, y_idx: i32) -> bool {
+        if x_idx < 0 || y_idx < 0 {
             return false;
         }
-        let (ux, uy) = (idx_x as usize, idx_y as usize);
-        ux < self.n_width && uy < self.n_height && !self.vv_blocked[ux][uy]
+        let (ux, uy) = (x_idx as usize, y_idx as usize);
+        ux < self.width && uy < self.height && !self.blocked[ux][uy]
     }
 }
 
@@ -91,122 +91,122 @@ impl GridMap {
 
 fn bfs_plan(
     grid: &GridMap,
-    pt_start: Point,
-    pt_goal: Point,
+    start: Point,
+    goal: Point,
     mut on_explore: impl FnMut(Point),
 ) -> Vec<Point> {
-    let idx_sx = grid.pos_to_idx(pt_start.x, grid.f_min_x);
-    let idx_sy = grid.pos_to_idx(pt_start.y, grid.f_min_y);
-    let idx_gx = grid.pos_to_idx(pt_goal.x, grid.f_min_x);
-    let idx_gy = grid.pos_to_idx(pt_goal.y, grid.f_min_y);
+    let start_x_idx = grid.pos_to_idx(start.x, grid.min_x);
+    let start_y_idx = grid.pos_to_idx(start.y, grid.min_y);
+    let goal_x_idx = grid.pos_to_idx(goal.x, grid.min_x);
+    let goal_y_idx = grid.pos_to_idx(goal.y, grid.min_y);
 
-    let mut v_nodes = vec![Node {
-        idx_x: idx_sx,
-        idx_y: idx_sy,
-        f_cost: 0.0,
-        idx_parent: None,
+    let mut nodes = vec![Node {
+        x_idx: start_x_idx,
+        y_idx: start_y_idx,
+        cost: 0.0,
+        parent_idx: None,
     }];
-    let mut q_open = VecDeque::new();
-    let mut v_visited: Vec<Option<usize>> = vec![None; grid.n_width * grid.n_height];
+    let mut open_queue = VecDeque::new();
+    let mut visited: Vec<Option<usize>> = vec![None; grid.width * grid.height];
 
-    q_open.push_back(0usize);
-    v_visited[grid.flat_index(idx_sx, idx_sy)] = Some(0);
+    open_queue.push_back(0usize);
+    visited[grid.flat_index(start_x_idx, start_y_idx)] = Some(0);
 
-    let idx_goal = loop {
-        let Some(idx_cur) = q_open.pop_front() else {
+    let goal_node_idx = loop {
+        let Some(current_idx) = open_queue.pop_front() else {
             return Vec::new();
         };
-        let Node { idx_x, idx_y, f_cost, .. } = v_nodes[idx_cur];
+        let Node { x_idx, y_idx, cost, .. } = nodes[current_idx];
 
         on_explore(Point::new(
-            grid.idx_to_pos(idx_x as usize, grid.f_min_x),
-            grid.idx_to_pos(idx_y as usize, grid.f_min_y),
+            grid.index_to_pos(x_idx as usize, grid.min_x),
+            grid.index_to_pos(y_idx as usize, grid.min_y),
         ));
 
-        if idx_x == idx_gx && idx_y == idx_gy {
-            break idx_cur;
+        if x_idx == goal_x_idx && y_idx == goal_y_idx {
+            break current_idx;
         }
 
         for m in &MOTIONS {
-            let (nx, ny) = (idx_x + m.dx, idx_y + m.dy);
+            let (nx, ny) = (x_idx + m.dx, y_idx + m.dy);
             if !grid.is_walkable(nx, ny) {
                 continue;
             }
 
-            let idx_flat = grid.flat_index(nx, ny);
-            if v_visited[idx_flat].is_some() {
+            let flat_idx = grid.flat_index(nx, ny);
+            if visited[flat_idx].is_some() {
                 continue;
             }
 
-            v_nodes.push(Node {
-                idx_x: nx,
-                idx_y: ny,
-                f_cost: f_cost + m.f_cost,
-                idx_parent: Some(idx_cur),
+            nodes.push(Node {
+                x_idx: nx,
+                y_idx: ny,
+                cost: cost + m.cost,
+                parent_idx: Some(current_idx),
             });
-            let idx_new = v_nodes.len() - 1;
-            v_visited[idx_flat] = Some(idx_new);
-            q_open.push_back(idx_new);
+            let new_idx = nodes.len() - 1;
+            visited[flat_idx] = Some(new_idx);
+            open_queue.push_back(new_idx);
         }
     };
 
     // Backtrace
-    let mut v_path = Vec::new();
-    let mut idx_trace = idx_goal;
+    let mut path = Vec::new();
+    let mut trace_idx = goal_node_idx;
     loop {
-        let node = &v_nodes[idx_trace];
-        v_path.push(Point::new(
-            grid.idx_to_pos(node.idx_x as usize, grid.f_min_x),
-            grid.idx_to_pos(node.idx_y as usize, grid.f_min_y),
+        let node = &nodes[trace_idx];
+        path.push(Point::new(
+            grid.index_to_pos(node.x_idx as usize, grid.min_x),
+            grid.index_to_pos(node.y_idx as usize, grid.min_y),
         ));
-        match node.idx_parent {
-            Some(idx) => idx_trace = idx,
+        match node.parent_idx {
+            Some(idx) => trace_idx = idx,
             None => break,
         }
     }
-    v_path.reverse();
-    v_path
+    path.reverse();
+    path
 }
 
 // --- Main ---
 
 pub fn main() {
-    let f_resolution = 2.0_f32;
-    let f_radius = 1.0_f32;
+    let resolution = 2.0_f32;
+    let robot_radius = 1.0_f32;
 
-    let mut v_obs = Vec::new();
-    for i in -10..60 { v_obs.push(Point::new(i as f32, -10.0)); }      // bottom wall
-    for i in -10..60 { v_obs.push(Point::new(60.0, i as f32)); }       // right wall
-    for i in -10..61 { v_obs.push(Point::new(i as f32, 60.0)); }       // top wall
-    for i in -10..61 { v_obs.push(Point::new(-10.0, i as f32)); }      // left wall
-    for i in -10..40 { v_obs.push(Point::new(20.0, i as f32)); }       // inner wall 1
-    for i in 0..40   { v_obs.push(Point::new(40.0, 60.0 - i as f32)); } // inner wall 2
+    let mut obstacles = Vec::new();
+    for i in -10..60 { obstacles.push(Point::new(i as f32, -10.0)); }      // bottom wall
+    for i in -10..60 { obstacles.push(Point::new(60.0, i as f32)); }       // right wall
+    for i in -10..61 { obstacles.push(Point::new(i as f32, 60.0)); }       // top wall
+    for i in -10..61 { obstacles.push(Point::new(-10.0, i as f32)); }      // left wall
+    for i in -10..40 { obstacles.push(Point::new(20.0, i as f32)); }       // inner wall 1
+    for i in 0..40   { obstacles.push(Point::new(40.0, 60.0 - i as f32)); } // inner wall 2
 
-    let pt_start = Point::new(10.0, 10.0);
-    let pt_goal = Point::new(50.0, 50.0);
+    let start = Point::new(10.0, 10.0);
+    let goal = Point::new(50.0, 50.0);
 
-    let grid = GridMap::build(&v_obs, f_resolution, f_radius);
+    let grid = GridMap::build(&obstacles, resolution, robot_radius);
 
     let mut viz = GridViz::new(
         "BFS Path Planning",
-        (grid.f_min_x, grid.f_max_x),
-        (grid.f_min_y, grid.f_max_y),
+        (grid.min_x, grid.max_x),
+        (grid.min_y, grid.max_y),
     );
 
-    viz.draw(&v_obs, pt_start, pt_goal, &[], &[]);
+    viz.draw(&obstacles, start, goal, &[], &[]);
 
-    let mut v_explored: Vec<Point> = Vec::new();
-    let mut n_count = 0u32;
-    let v_path = bfs_plan(&grid, pt_start, pt_goal, |pt| {
-        v_explored.push(pt);
-        n_count += 1;
-        if n_count % 10 == 0 {
-            viz.draw(&v_obs, pt_start, pt_goal, &v_explored, &[]);
+    let mut explored: Vec<Point> = Vec::new();
+    let mut explore_count = 0u32;
+    let path = bfs_plan(&grid, start, goal, |point| {
+        explored.push(point);
+        explore_count += 1;
+        if explore_count % 10 == 0 {
+            viz.draw(&obstacles, start, goal, &explored, &[]);
         }
     });
 
     println!("Find goal");
 
-    viz.draw(&v_obs, pt_start, pt_goal, &v_explored, &v_path);
+    viz.draw(&obstacles, start, goal, &explored, &path);
     viz.wait_close();
 }

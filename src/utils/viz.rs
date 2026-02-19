@@ -24,16 +24,16 @@ pub struct GridViz {
     window: Window,
     buf_rgb: Vec<u8>,
     buf_u32: Vec<u32>,
-    sz_title: String,
-    f_x_range: (f64, f64),
-    f_y_range: (f64, f64),
+    title: String,
+    x_range: (f64, f64),
+    y_range: (f64, f64),
 }
 
 impl GridViz {
-    pub fn new(sz_title: &str, f_x_range: (f32, f32), f_y_range: (f32, f32)) -> Self {
-        let n_pixels = (WIN_W * WIN_H) as usize;
+    pub fn new(title: &str, x_range: (f32, f32), y_range: (f32, f32)) -> Self {
+        let pixel_count = (WIN_W * WIN_H) as usize;
         let window = Window::new(
-            sz_title,
+            title,
             WIN_W as usize,
             WIN_H as usize,
             WindowOptions::default(),
@@ -42,21 +42,21 @@ impl GridViz {
 
         Self {
             window,
-            buf_rgb: vec![0u8; n_pixels * 3],
-            buf_u32: vec![0u32; n_pixels],
-            sz_title: sz_title.to_string(),
-            f_x_range: (f_x_range.0 as f64, f_x_range.1 as f64),
-            f_y_range: (f_y_range.0 as f64, f_y_range.1 as f64),
+            buf_rgb: vec![0u8; pixel_count * 3],
+            buf_u32: vec![0u32; pixel_count],
+            title: title.to_string(),
+            x_range: (x_range.0 as f64, x_range.1 as f64),
+            y_range: (y_range.0 as f64, y_range.1 as f64),
         }
     }
 
     pub fn draw(
         &mut self,
-        v_obs: &[Point],
-        pt_start: Point,
-        pt_goal: Point,
-        v_explored: &[Point],
-        v_path: &[Point],
+        obstacles: &[Point],
+        start: Point,
+        goal: Point,
+        explored: &[Point],
+        path: &[Point],
     ) {
         {
             let root =
@@ -65,12 +65,12 @@ impl GridViz {
 
             let mut chart = ChartBuilder::on(&root)
                 .margin(10)
-                .caption(&self.sz_title, ("sans-serif", 20))
+                .caption(&self.title, ("sans-serif", 20))
                 .x_label_area_size(30)
                 .y_label_area_size(30)
                 .build_cartesian_2d(
-                    self.f_x_range.0..self.f_x_range.1,
-                    self.f_y_range.0..self.f_y_range.1,
+                    self.x_range.0..self.x_range.1,
+                    self.y_range.0..self.y_range.1,
                 )
                 .unwrap();
 
@@ -78,7 +78,7 @@ impl GridViz {
 
             chart
                 .draw_series(
-                    v_obs
+                    obstacles
                         .iter()
                         .map(|pt| Circle::new((pt.x as f64, pt.y as f64), 2, BLACK.filled())),
                 )
@@ -86,7 +86,7 @@ impl GridViz {
 
             chart
                 .draw_series(
-                    v_explored
+                    explored
                         .iter()
                         .map(|pt| Circle::new((pt.x as f64, pt.y as f64), 3, CYAN.filled())),
                 )
@@ -94,7 +94,7 @@ impl GridViz {
 
             chart
                 .draw_series(std::iter::once(Circle::new(
-                    (pt_start.x as f64, pt_start.y as f64),
+                    (start.x as f64, start.y as f64),
                     6,
                     GREEN.filled(),
                 )))
@@ -102,16 +102,16 @@ impl GridViz {
 
             chart
                 .draw_series(std::iter::once(Circle::new(
-                    (pt_goal.x as f64, pt_goal.y as f64),
+                    (goal.x as f64, goal.y as f64),
                     6,
                     BLUE.filled(),
                 )))
                 .unwrap();
 
-            if v_path.len() > 1 {
+            if path.len() > 1 {
                 chart
                     .draw_series(LineSeries::new(
-                        v_path.iter().map(|pt| (pt.x as f64, pt.y as f64)),
+                        path.iter().map(|pt| (pt.x as f64, pt.y as f64)),
                         RED.stroke_width(2),
                     ))
                     .unwrap();
